@@ -808,9 +808,13 @@ async def cmd_list_all_users(message: Message):
     index = 1
     for u in users:
         username = u.get('username') or '—'
+        fullname = u.get('fullname', "Noma'lum")
+        direction = u.get('direction', '—')
+        status = u.get('status', '—')
+        user_id_val = u.get('user_id')
         block = (
-            f"{index}. {u.get('fullname','Noma\'lum')} (@{username})\n"
-            f"   ID: {u.get('user_id')} | 📍 {u.get('direction','—')} | {u.get('status','—')}\n\n"
+            f"{index}. {fullname} (@{username})\n"
+            f"   ID: {user_id_val} | 📍 {direction} | {status}\n\n"
         )
         if len(text) + len(block) > 3500:
             await send_chunked_message(message, text)
