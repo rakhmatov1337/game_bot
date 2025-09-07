@@ -68,13 +68,11 @@ async def send_chunked_message(target, text: str, chunk_limit: int = 3500):
 class RegistrationForm(StatesGroup):
     # Asosiy ma'lumotlar
     fullname = State()
-    birthdate = State()
     freefire_id = State()
-    direction = State()
     phone = State()
 
 class TeamManagementForm(StatesGroup):
-    # Jamoa boshqaruvi
+    # Gildiya boshqaruvi
     remove_member = State()
     team_settings = State()
 
@@ -87,8 +85,8 @@ def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🏆 Ro'yxatdan o'tish")],
-            [KeyboardButton(text="🏆 Jamoa yaratish"), KeyboardButton(text="🔍 Gildiyalar ro'yxati")],
-            [KeyboardButton(text="👤 Solo o'yinchilar"), KeyboardButton(text="👥 Mening jamoam")],
+            [KeyboardButton(text="🏆 Gildiya yaratish"), KeyboardButton(text="🔍 Gildiyalar ro'yxati")],
+            [KeyboardButton(text="👤 Solo o'yinchilar"), KeyboardButton(text="👥 Mening gildiyam")],
             [KeyboardButton(text="ℹ️ Ma'lumot"), KeyboardButton(text="📞 Aloqa uchun")]
         ],
         resize_keyboard=True
@@ -152,7 +150,7 @@ async def check_user_registered(user_id):
         return False
 
 async def get_available_teams():
-    """Mavjud jamoalar ro'yxatini olish"""
+    """Mavjud gildiyalar ro'yxatini olish"""
     try:
         response = requests.get(TEAMS_API_URL, timeout=10)
         if response.status_code == 200:
@@ -176,28 +174,28 @@ async def get_solo_players():
         return []
 
 async def get_my_team(user_id):
-    """Foydalanuvchining jamoasini olish"""
+    """Foydalanuvchining gildiyasini olish"""
     try:
         response = requests.get(f"{MY_TEAM_API_URL}{user_id}/", timeout=10)
         if response.status_code == 200:
             return True, response.json()
-        return False, {'error': 'Jamoangizni olishda xato'}
+        return False, {'error': 'Gildiyangizni olishda xato'}
     except Exception as e:
-        print(f"Jamoangizni olishda xato: {e}")
+        print(f"Gildiyangizni olishda xato: {e}")
         return False, {'error': str(e)}
 
 async def join_team_by_code(user_id, team_code):
-    """Jamoa kodiga qo'shilish"""
+    """Gildiya kodiga qo'shilish"""
     try:
         data = {'user_id': user_id, 'team_code': team_code}
         response = requests.post(JOIN_TEAM_API_URL, json=data, timeout=10)
         return response.status_code == 200, response.json()
     except Exception as e:
-        print(f"Jamoa kodiga qo'shilishda xato: {e}")
+        print(f"Gildiya kodiga qo'shilishda xato: {e}")
         return False, {'error': str(e)}
 
 async def remove_team_member(captain_id, member_id):
-    """Jamoa a'zosini chiqarish"""
+    """Gildiya a'zosini chiqarish"""
     try:
         data = {'captain_id': captain_id, 'member_id': member_id}
         response = requests.post(REMOVE_MEMBER_API_URL, json=data, timeout=10)
@@ -207,23 +205,23 @@ async def remove_team_member(captain_id, member_id):
         return False, {'error': str(e)}
 
 async def delete_team(captain_id):
-    """Jamoa sardori tomonidan jamoani o'chirish"""
+    """Gildiya sardori tomonidan gildiyani o'chirish"""
     try:
         data = {'captain_id': captain_id}
         response = requests.post(DELETE_TEAM_API_URL, json=data, timeout=10)
         return response.status_code == 200, response.json()
     except Exception as e:
-        print(f"Jamoa o'chirishda xato: {e}")
+        print(f"Gildiya o'chirishda xato: {e}")
         return False, {'error': str(e)}
 
 async def leave_team(user_id):
-    """Jamoa a'zosi tomonidan jamoadan chiqish"""
+    """Gildiya a'zosi tomonidan gildiyadan chiqish"""
     try:
         data = {'user_id': user_id}
         response = requests.post(LEAVE_TEAM_API_URL, json=data, timeout=10)
         return response.status_code == 200, response.json()
     except Exception as e:
-        print(f"Jamoadan chiqishda xato: {e}")
+        print(f"Gildiyadan chiqishda xato: {e}")
         return False, {'error': str(e)}
 
 async def get_all_users():
@@ -286,21 +284,21 @@ async def cmd_start(message: Message, bot: Bot):
             pending_referral_codes[message.from_user.id] = referral_code
             await message.answer(
                 f"🎮 <b>Free Fire Turnir Botiga xush kelibsiz, {message.from_user.first_name}!</b>\n\n"
-                f"Jamoaga qo'shilish uchun ro'yxatdan o'ting:",
+                f"Gildiyaga qo'shilish uchun ro'yxatdan o'ting:",
                 reply_markup=main_menu(),
                 parse_mode="HTML"
             )
             return
         
-        # Foydalanuvchi mavjud, jamoaga qo'shilish
+        # Foydalanuvchi mavjud, gildiyaga qo'shilish
         success, result = await join_team_by_code(message.from_user.id, referral_code)
         
         if success:
             team_name = result.get('team_name', 'Noma\'lum')
             captain_name = result.get('captain_name', 'Noma\'lum')
             await message.answer(
-                f"✅ <b>Jamoa kodiga muvaffaqiyatli qo'shildingiz!</b>\n\n"
-                f"Jamoa: {team_name}\n"
+                f"✅ <b>Gildiya kodiga muvaffaqiyatli qo'shildingiz!</b>\n\n"
+                f"Gildiya: {team_name}\n"
                 f"Sardor: {captain_name}\n\n"
                 f"Endi turnir uchun tayyorlaning! 🔥",
                 reply_markup=main_menu(),
@@ -310,7 +308,7 @@ async def cmd_start(message: Message, bot: Bot):
         else:
             error_msg = result.get('error', 'Noma\'lum xato')
             await message.answer(
-                f"❌ <b>Jamoa kodiga qo'shila olmadingiz!</b>\n\n"
+                f"❌ <b>Gildiya kodiga qo'shila olmadingiz!</b>\n\n"
                 f"Sabab: {error_msg}",
                 reply_markup=main_menu(),
                 parse_mode="HTML"
@@ -333,7 +331,7 @@ async def about_university(message: Message):
 
 🎯 <b>Qatnashish uchun:</b>
 
-1️⃣ Jamoa tuzing yoki mavjud jamoaga qo'shiling
+1️⃣ Gildiya tuzing yoki mavjud gildiyaga qo'shiling
 2️⃣ Viloyatingizni belgilang
 3️⃣ Turnir qoidalariga rioya qiling
 
@@ -388,12 +386,12 @@ async def registration_start(message: Message, state: FSMContext):
     ))
     await state.set_state(RegistrationForm.fullname)
 
-# ===== Jamoa yaratish boshlanishi =====
+# ===== Gildiya yaratish boshlanishi =====
 async def create_team_start(message: Message, state: FSMContext):
     # Username tekshirish
     if not message.from_user.username:
         await message.answer(
-            "❌ <b>Jamoa yaratish uchun username kerak!</b>\n\n"
+            "❌ <b>Gildiya yaratish uchun username kerak!</b>\n\n"
             "Iltimos, Telegram sozlamalarida username o'rnating va qaytadan urinib ko'ring.",
             reply_markup=main_menu(),
             parse_mode="HTML"
@@ -404,24 +402,24 @@ async def create_team_start(message: Message, state: FSMContext):
     success, result = await check_user_exists(message.from_user.id)
     if not success or not result.get('exists', False):
         await message.answer(
-            "❌ Jamoa yaratish uchun avval ro'yxatdan o'ting!",
+            "❌ Gildiya yaratish uchun avval ro'yxatdan o'ting!",
             reply_markup=main_menu()
         )
         return
     
-    # Foydalanuvchi allaqachon jamoada ekanligini tekshirish
+    # Foydalanuvchi allaqachon gildiyada ekanligini tekshirish
     success, result = await get_my_team(message.from_user.id)
     if success and result.get('team'):
         await message.answer(
-            "❌ Siz allaqachon jamoadasiz!\n\n"
-            "Boshqa jamoa yaratish uchun avval jamoangizdan chiqing.",
+            "❌ Siz allaqachon gildiyadasiz!\n\n"
+            "Boshqa gildiya yaratish uchun avval gildiyangizdan chiqing.",
             reply_markup=main_menu()
         )
         return
     
     await message.answer(
-        "🏆 <b>Jamoa yaratish</b>\n\n"
-        "Jamoa nomini yuboring:",
+        "🏆 <b>Gildiya yaratish</b>\n\n"
+        "Gildiya nomini yuboring:",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="🔙 Orqaga")]],
             resize_keyboard=True
@@ -438,7 +436,7 @@ async def process_team_name(message: Message, state: FSMContext):
     
     team_name = message.text
     
-    # Django API ga jamoa yaratish so'rovi
+    # Django API ga gildiya yaratish so'rovi
     django_data = {
         'user_id': message.from_user.id,
         'team_name': team_name,
@@ -452,15 +450,15 @@ async def process_team_name(message: Message, state: FSMContext):
         referral_link = f"https://t.me/Free_Fire_turnirbot?start=join_{referral_code}"
         
         success_message = (
-            f"✅ <b>Jamoa muvaffaqiyatli yaratildi!</b>\n\n"
-            f"🏆 Jamoa nomi: {team_name}\n"
-            f"👑 Siz jamoa sardorisiz\n\n"
+            f"✅ <b>Gildiya muvaffaqiyatli yaratildi!</b>\n\n"
+            f"🏆 Gildiya nomi: {team_name}\n"
+            f"👑 Siz gildiya sardorisiz\n\n"
             f"🔗 <b>Referal link:</b>\n"
             f"{referral_link}\n\n"
-            f"Bu linkni boshqalarga yuboring va ular sizning jamoangizga qo'shiladi!"
+            f"Bu linkni boshqalarga yuboring va ular sizning gildiyangizga qo'shiladi!"
         )
     else:
-        success_message = "❌ Jamoa yaratishda xato yuz berdi. Qaytadan urinib ko'ring."
+        success_message = "❌ Gildiya yaratishda xato yuz berdi. Qaytadan urinib ko'ring."
     
     await message.answer(success_message, reply_markup=main_menu(), parse_mode="HTML")
     await state.clear()
@@ -473,21 +471,9 @@ async def process_fullname(message: Message, state: FSMContext):
         await message.answer("Asosiy menyu:", reply_markup=main_menu())
         return
     await state.update_data(fullname=message.text)
-    await message.answer("Tug‘ilgan sanangizni kiriting (kk.oo.yyyy formatda):", reply_markup=back_button())
-    await state.set_state(RegistrationForm.birthdate)
-
-async def process_birthdate(message: Message, state: FSMContext):
-    if message.text == "🔙 Orqaga":
-        await state.clear()
-        await message.answer("Asosiy menyu:", reply_markup=main_menu())
-        return
-    if not re.match(r'^\d{2}\.\d{2}\.\d{4}$', message.text):
-        await message.answer("⚠️ Format noto‘g‘ri! kk.oo.yyyy formatda kiriting.")
-        return
-    await state.update_data(birthdate=message.text)
-
     await message.answer("Free Fire dagi ID raqamingizni kiriting:", reply_markup=back_button())
     await state.set_state(RegistrationForm.freefire_id)
+
 
 async def process_freefire_id(message: Message, state: FSMContext):
     if message.text == "🔙 Orqaga":
@@ -496,44 +482,6 @@ async def process_freefire_id(message: Message, state: FSMContext):
         return
 
     await state.update_data(freefire_id=message.text)
-
-    directions = [
-        "Andijon", "Farg'ona", "Namangan", "Toshkent",
-        "Sirdaryo", "Jizzax", "Samarqand", "Qashqadaryo",
-        "Surxondaryo", "Navoiy", "Buxoro", "Xorazm",
-        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston", "Tojikiston"
-    ]
-
-    row_width = 2
-    keyboard_layout = [directions[i:i + row_width] for i in range(0, len(directions), row_width)]
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=btn) for btn in row] for row in keyboard_layout] + [[KeyboardButton(text="🔙 Orqaga")]],
-        resize_keyboard=True
-    )
-
-    await message.answer("Viloyatingizni tanlang:", reply_markup=kb)
-    await state.set_state(RegistrationForm.direction)
-
-async def process_direction(message: Message, state: FSMContext):
-    if message.text == "🔙 Orqaga":
-        await state.clear()
-        await message.answer("Asosiy menyu:", reply_markup=main_menu())
-        return
-    
-    # Faqat ruxsat etilgan viloyatlarni qabul qilish
-    allowed_directions = [
-        "Andijon", "Farg'ona", "Namangan", "Toshkent",
-        "Sirdaryo", "Jizzax", "Samarqand", "Qashqadaryo",
-        "Surxondaryo", "Navoiy", "Buxoro", "Xorazm",
-        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston"
-    ]
-    
-    if message.text not in allowed_directions:
-        await message.answer("❌ Iltimos, quyidagi tugmalardan birini tanlang:")
-        return
-    
-    await state.update_data(direction=message.text)
     
     kb = ReplyKeyboardMarkup(
         keyboard=[
@@ -542,8 +490,10 @@ async def process_direction(message: Message, state: FSMContext):
         ],
         resize_keyboard=True
     )
-    await message.answer("Telefon raqamingizni yuboring yoki yozing:", reply_markup=kb)
+    
+    await message.answer("Telefon raqamingizni yuboring:", reply_markup=kb)
     await state.set_state(RegistrationForm.phone)
+
 
 
 async def process_phone(message: Message, state: FSMContext, bot: Bot):
@@ -563,8 +513,6 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     # Django API ga yuborish - to'g'ridan-to'g'ri solo ro'yxatdan o'tish
     django_data = {
         'fullname': data['fullname'],
-        'birthdate': data['birthdate'],
-        'direction': data['direction'],
         'phone': phone_number,
         'freefire_id': data['freefire_id'],
         'user_id': message.from_user.id,
@@ -579,7 +527,7 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     django_result = await save_to_django(django_data)
 
     if django_result and django_result.get('success', False):
-        # Agar foydalanuvchida pending referal kod bo'lsa, jamoaga qo'shilish
+        # Agar foydalanuvchida pending referal kod bo'lsa, gildiyaga qo'shilish
         if message.from_user.id in pending_referral_codes:
             referral_code = pending_referral_codes[message.from_user.id]
             del pending_referral_codes[message.from_user.id]  # O'chirish
@@ -588,14 +536,14 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
             import asyncio
             await asyncio.sleep(1)
             
-            # Jamoaga qo'shilish
+            # Gildiyaga qo'shilish
             success, result = await join_team_by_code(message.from_user.id, referral_code)
             if success:
                 team_name = result.get('team_name', 'Noma\'lum')
                 captain_name = result.get('captain_name', 'Noma\'lum')
                 success_message = (
-                    f"✅ <b>Ro'yxatdan o'tdingiz va jamoaga qo'shildingiz!</b>\n\n"
-                    f"🏆 Jamoa: {team_name}\n"
+                    f"✅ <b>Ro'yxatdan o'tdingiz va gildiyaga qo'shildingiz!</b>\n\n"
+                    f"🏆 Gildiya: {team_name}\n"
                     f"👑 Sardor: {captain_name}\n\n"
                     f"Endi turnir uchun tayyorlaning! 🔥"
                 )
@@ -603,7 +551,7 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
                 error_msg = result.get('error', 'Noma\'lum xato')
                 success_message = (
                     f"✅ <b>Ro'yxatdan o'tdingiz!</b>\n\n"
-                    f"❌ Jamoaga qo'shila olmadingiz: {error_msg}"
+                    f"❌ Gildiyaga qo'shila olmadingiz: {error_msg}"
                 )
         else:
             success_message = "✅ Ma'lumotlaringiz qabul qilindi! Rahmat."
@@ -627,7 +575,7 @@ async def show_teams_list(message: Message, page: int = 0):
     start_idx = page * items_per_page
     end_idx = start_idx + items_per_page
     
-    # Joriy sahifadagi jamoalar
+    # Joriy sahifadagi gildiyalar
     current_teams = teams[start_idx:end_idx]
     
     text = f"🏰 <b>Mavjud gildiyalar ro'yxati:</b>\n"
@@ -748,7 +696,7 @@ async def show_solo_players(message: Message, page: int = 0):
     
     await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
 
-# ===== Mening jamoam =====
+# ===== Mening gildiyam =====
 async def show_my_team(message: Message):
     success, result = await get_my_team(message.from_user.id)
     
@@ -764,12 +712,12 @@ async def show_my_team(message: Message):
         referral_link = f"https://t.me/Free_Fire_turnirbot?start=join_{referral_code}"
         
         text = (
-            f"🏆 <b>Mening jamoam:</b>\n\n"
-            f"📛 Jamoa nomi: {team_name}\n"
+            f"🏆 <b>Mening gildiyam:</b>\n\n"
+            f"📛 Gildiya nomi: {team_name}\n"
             f"👑 Sardor: {captain_name}\n"
             f"👥 A'zolar: {current_members}/{max_members}\n"
             f"🔗 Referal link:\n{referral_link}\n\n"
-            f"<b>Jamoa a'zolari:</b>\n"
+            f"<b>Gildiya a'zolari:</b>\n"
         )
         
         for member in team_data.get('members', []):
@@ -785,21 +733,21 @@ async def show_my_team(message: Message):
                     [InlineKeyboardButton(text="👥 A'zo qo'shish", callback_data="add_member")],
                     [InlineKeyboardButton(text="❌ A'zo chiqarish", callback_data="remove_member")],
                     [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")],
-                    [InlineKeyboardButton(text="🗑️ Jamoani o'chirish", callback_data="delete_team")]
+                    [InlineKeyboardButton(text="🗑️ Gildiyani o'chirish", callback_data="delete_team")]
                 ]
             )
             await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
         else:
-            # A'zolar uchun jamoadan chiqish tugmasi
+            # A'zolar uchun gildiyadan chiqish tugmasi
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
-                    [InlineKeyboardButton(text="🚪 Jamoadan chiqish", callback_data="leave_team")]
+                    [InlineKeyboardButton(text="🚪 Gildiyadan chiqish", callback_data="leave_team")]
                 ]
             )
             await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
     else:
         error_msg = result.get('error', 'Noma\'lum xato')
-        await message.answer(f"❌ Siz hali hech qanday jamoaga qo'shilmagansiz.\n\nSabab: {error_msg}")
+        await message.answer(f"❌ Siz hali hech qanday gildiyaga qo'shilmagansiz.\n\nSabab: {error_msg}")
 
 # ===== Admin Broadcast =====
 async def cmd_broadcast(message: Message, state: FSMContext):
@@ -903,7 +851,7 @@ async def cmd_list_all_users(message: Message):
 async def handle_callback(callback: CallbackQuery, bot: Bot):
     if callback.data == "check_subscription":
         if await check_subscription(bot, callback.from_user.id):
-            # Agar foydalanuvchida pending referal kod bo'lsa, jamoaga qo'shilish
+            # Agar foydalanuvchida pending referal kod bo'lsa, gildiyaga qo'shilish
             if callback.from_user.id in pending_referral_codes:
                 referral_code = pending_referral_codes[callback.from_user.id]
                 del pending_referral_codes[callback.from_user.id]  # O'chirish
@@ -911,15 +859,15 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                 # Foydalanuvchi ro'yxatdan o'tganligini tekshirish
                 success, result = await check_user_exists(callback.from_user.id)
                 if success and result.get('exists', False):
-                    # Foydalanuvchi mavjud, jamoaga qo'shilish
+                    # Foydalanuvchi mavjud, gildiyaga qo'shilish
                     success, result = await join_team_by_code(callback.from_user.id, referral_code)
                     
                     if success:
                         team_name = result.get('team_name', 'Noma\'lum')
                         captain_name = result.get('captain_name', 'Noma\'lum')
                         await callback.message.edit_text(
-                            f"✅ <b>Obuna tekshirildi va jamoaga qo'shildingiz!</b>\n\n"
-                            f"🏆 Jamoa: {team_name}\n"
+                            f"✅ <b>Obuna tekshirildi va gildiyaga qo'shildingiz!</b>\n\n"
+                            f"🏆 Gildiya: {team_name}\n"
                             f"👑 Sardor: {captain_name}\n\n"
                             f"Endi turnir uchun tayyorlaning! 🔥",
                             parse_mode="HTML"
@@ -928,14 +876,14 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                         error_msg = result.get('error', 'Noma\'lum xato')
                         await callback.message.edit_text(
                             f"✅ <b>Obuna tekshirildi!</b>\n\n"
-                            f"❌ Jamoaga qo'shila olmadingiz: {error_msg}",
+                            f"❌ Gildiyaga qo'shila olmadingiz: {error_msg}",
                             parse_mode="HTML"
                         )
                 else:
                     # Foydalanuvchi ro'yxatdan o'tmagan, referal kodni saqlash
                     await callback.message.edit_text(
                         f"✅ <b>Obuna tekshirildi!</b>\n\n"
-                        f"Jamoaga qo'shilish uchun ro'yxatdan o'ting:",
+                        f"Gildiyaga qo'shilish uchun ro'yxatdan o'ting:",
                         parse_mode="HTML"
                     )
                 
@@ -956,7 +904,7 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             await callback.answer("❌ Hali ham barcha kanallarga obuna bo'lmagansiz!", show_alert=True)
     
     elif callback.data == "get_referral_link":
-        # Foydalanuvchining jamoasini olish
+        # Foydalanuvchining gildiyasini olish
         success, result = await get_my_team(callback.from_user.id)
         if success:
             team_data = result.get('team', {})
@@ -966,17 +914,17 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             await callback.message.edit_text(
                 f"🔗 <b>Referal link:</b>\n\n"
                 f"{referral_link}\n\n"
-                f"Bu linkni boshqalarga yuboring va ular sizning jamoangizga qo'shiladi!",
+                f"Bu linkni boshqalarga yuboring va ular sizning gildiyangizga qo'shiladi!",
                 parse_mode="HTML"
             )
         else:
-            await callback.answer("❌ Jamoangizni topa olmadim!", show_alert=True)
+            await callback.answer("❌ Gildiyangizni topa olmadim!", show_alert=True)
     
     elif callback.data == "add_member":
-        await callback.answer("ℹ️ Boshqa o'yinchilar referal link orqali jamoangizga qo'shiladi!", show_alert=True)
+        await callback.answer("ℹ️ Boshqa o'yinchilar referal link orqali gildiyangizga qo'shiladi!", show_alert=True)
     
     elif callback.data == "remove_member":
-        # Foydalanuvchining jamoasini olish
+        # Foydalanuvchining gildiyasini olish
         success, result = await get_my_team(callback.from_user.id)
         if success:
             team_data = result.get('team', {})
@@ -1005,11 +953,11 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                     else:
                         await callback.answer("ℹ️ Chiqarib yuborish uchun a'zo yo'q!", show_alert=True)
                 else:
-                    await callback.answer("ℹ️ Jamoada faqat siz borsiz!", show_alert=True)
+                    await callback.answer("ℹ️ Gildiyada faqat siz borsiz!", show_alert=True)
             else:
-                await callback.answer("ℹ️ Siz jamoa sardori emassiz!", show_alert=True)
+                await callback.answer("ℹ️ Siz gildiya sardori emassiz!", show_alert=True)
         else:
-            await callback.answer("❌ Jamoangizni topa olmadim!", show_alert=True)
+            await callback.answer("❌ Gildiyangizni topa olmadim!", show_alert=True)
     
     elif callback.data.startswith("remove_"):
         member_id = callback.data.replace("remove_", "")
@@ -1018,7 +966,7 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
         if success:
             member_name = result.get('member_name', 'A\'zo')
             await callback.message.edit_text(
-                f"✅ <b>{member_name} jamoadan chiqarildi!</b>\n\n"
+                f"✅ <b>{member_name} gildiyadan chiqarildi!</b>\n\n"
                 f"Endi u solo o'yinchi sifatida ro'yxatda.",
                 parse_mode="HTML"
             )
@@ -1027,15 +975,15 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
     
     elif callback.data == "delete_team":
-        # Jamoani o'chirish
+        # Gildiyani o'chirish
         success, result = await delete_team(callback.from_user.id)
         
         if success:
             team_name = result.get('team_name', 'Noma\'lum')
             await callback.message.edit_text(
-                f"✅ <b>Jamoa muvaffaqiyatli o'chirildi!</b>\n\n"
-                f"🗑️ Jamoa: {team_name}\n\n"
-                f"Barcha jamoa a'zolari endi solo o'yinchi sifatida ro'yxatda.",
+                f"✅ <b>Gildiya muvaffaqiyatli o'chirildi!</b>\n\n"
+                f"🗑️ Gildiya: {team_name}\n\n"
+                f"Barcha gildiya a'zolari endi solo o'yinchi sifatida ro'yxatda.",
                 parse_mode="HTML"
             )
             await callback.message.answer(
@@ -1047,14 +995,14 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
     
     elif callback.data == "leave_team":
-        # Jamoadan chiqish
+        # Gildiyadan chiqish
         success, result = await leave_team(callback.from_user.id)
         
         if success:
             team_name = result.get('team_name', 'Noma\'lum')
             await callback.message.edit_text(
-                f"✅ <b>Jamoadan muvaffaqiyatli chiqdingiz!</b>\n\n"
-                f"🚪 Jamoa: {team_name}\n\n"
+                f"✅ <b>Gildiyadan muvaffaqiyatli chiqdingiz!</b>\n\n"
+                f"🚪 Gildiya: {team_name}\n\n"
                 f"Endi siz solo o'yinchi sifatida ro'yxatdasiz.",
                 parse_mode="HTML"
             )
@@ -1067,7 +1015,7 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
     
     elif callback.data == "back_to_team":
-        # Jamoaga qaytish
+        # Gildiyaga qaytish
         success, result = await get_my_team(callback.from_user.id)
         if success:
             team_data = result.get('team', {})
@@ -1081,12 +1029,12 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             referral_link = f"https://t.me/Free_Fire_turnirbot?start=join_{referral_code}"
             
             text = (
-                f"🏆 <b>Mening jamoam:</b>\n\n"
-                f"📛 Jamoa nomi: {team_name}\n"
+                f"🏆 <b>Mening gildiyam:</b>\n\n"
+                f"📛 Gildiya nomi: {team_name}\n"
                 f"👑 Sardor: {captain_name}\n"
                 f"👥 A'zolar: {current_members}/{max_members}\n"
                 f"🔗 Referal link:\n{referral_link}\n\n"
-                f"<b>Jamoa a'zolari:</b>\n"
+                f"<b>Gildiya a'zolari:</b>\n"
             )
             
             for member in team_data.get('members', []):
@@ -1102,15 +1050,15 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                         [InlineKeyboardButton(text="👥 A'zo qo'shish", callback_data="add_member")],
                         [InlineKeyboardButton(text="❌ A'zo chiqarish", callback_data="remove_member")],
                         [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")],
-                        [InlineKeyboardButton(text="🗑️ Jamoani o'chirish", callback_data="delete_team")]
+                        [InlineKeyboardButton(text="🗑️ Gildiyani o'chirish", callback_data="delete_team")]
                     ]
                 )
                 await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
             else:
-                # A'zolar uchun jamoadan chiqish tugmasi
+                # A'zolar uchun gildiyadan chiqish tugmasi
                 keyboard = InlineKeyboardMarkup(
                     inline_keyboard=[
-                        [InlineKeyboardButton(text="🚪 Jamoadan chiqish", callback_data="leave_team")]
+                        [InlineKeyboardButton(text="🚪 Gildiyadan chiqish", callback_data="leave_team")]
                     ]
                 )
                 await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
@@ -1137,16 +1085,14 @@ async def main():
     dp.message.register(about_university, F.text == "ℹ️ Ma'lumot")
     dp.message.register(contact_info, F.text == "📞 Aloqa uchun")
     dp.message.register(registration_start, F.text == "🏆 Ro'yxatdan o'tish")
-    dp.message.register(create_team_start, F.text == "🏆 Jamoa yaratish")
+    dp.message.register(create_team_start, F.text == "🏆 Gildiya yaratish")
     dp.message.register(show_teams_list, F.text == "🔍 Gildiyalar ro'yxati")
     dp.message.register(show_solo_players, F.text == "👤 Solo o'yinchilar")
-    dp.message.register(show_my_team, F.text == "👥 Mening jamoam")
+    dp.message.register(show_my_team, F.text == "👥 Mening gildiyam")
     
     # Registration form handlers
     dp.message.register(process_fullname, RegistrationForm.fullname)
-    dp.message.register(process_birthdate, RegistrationForm.birthdate)
     dp.message.register(process_freefire_id, RegistrationForm.freefire_id)
-    dp.message.register(process_direction, RegistrationForm.direction)
     dp.message.register(process_phone, RegistrationForm.phone)
     
     # Team management handlers
