@@ -672,17 +672,17 @@ async def show_teams_list(message: Message, page: int = 0):
     nav_buttons = []
     
     if page > 0:
-        nav_buttons.append(InlineKeyboardButton("⬅️ Oldingi", callback_data=f"teams_page_{page-1}"))
+        nav_buttons.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data=f"teams_page_{page-1}"))
     
     if page < total_pages - 1:
-        nav_buttons.append(InlineKeyboardButton("Keyingi ➡️", callback_data=f"teams_page_{page+1}"))
+        nav_buttons.append(InlineKeyboardButton(text="Keyingi ➡️", callback_data=f"teams_page_{page+1}"))
     
     if nav_buttons:
         keyboard.append(nav_buttons)
     
-    keyboard.append([InlineKeyboardButton("🔙 Orqaga", callback_data="back_to_main")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Orqaga", callback_data="back_to_main")])
     
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
 
@@ -737,17 +737,17 @@ async def show_solo_players(message: Message, page: int = 0):
     nav_buttons = []
     
     if page > 0:
-        nav_buttons.append(InlineKeyboardButton("⬅️ Oldingi", callback_data=f"solo_page_{page-1}"))
+        nav_buttons.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data=f"solo_page_{page-1}"))
     
     if page < total_pages - 1:
-        nav_buttons.append(InlineKeyboardButton("Keyingi ➡️", callback_data=f"solo_page_{page+1}"))
+        nav_buttons.append(InlineKeyboardButton(text="Keyingi ➡️", callback_data=f"solo_page_{page+1}"))
     
     if nav_buttons:
         keyboard.append(nav_buttons)
     
-    keyboard.append([InlineKeyboardButton("🔙 Orqaga", callback_data="back_to_main")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Orqaga", callback_data="back_to_main")])
     
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
 
