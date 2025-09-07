@@ -24,15 +24,15 @@ YOUTUBE_CHANNEL = "https://youtube.com/@dino74sff?si=YrLirpaIxPPIYWWt"  # O'z Yo
 INSTAGRAM_ACCOUNT = "https://www.instagram.com/dino74s?igsh=MTJ0ZWR1b20yd3R0eg%3D%3D&utm_source=qr"  # O'z Instagram akkauntingizni qo'ying
 
 # Django API URL
-DJANGO_API_URL = "http://127.0.0.1:8000/api/bot-data/"
-CHANNELS_API_URL = "http://127.0.0.1:8000/api/channels/"
-TEAMS_API_URL = "http://127.0.0.1:8000/api/teams/"
-SOLO_PLAYERS_API_URL = "http://127.0.0.1:8000/api/solo-players/"
-MY_TEAM_API_URL = "http://127.0.0.1:8000/api/my-team/"
-JOIN_TEAM_API_URL = "http://127.0.0.1:8000/api/join-team/"
-REMOVE_MEMBER_API_URL = "http://127.0.0.1:8000/api/remove-member/"
-DELETE_TEAM_API_URL = "http://127.0.0.1:8000/api/delete-team/"
-LEAVE_TEAM_API_URL = "http://127.0.0.1:8000/api/leave-team/"
+DJANGO_API_URL = "http://46.101.107.199/api/bot-data/"
+CHANNELS_API_URL = "http://46.101.107.199/api/channels/"
+TEAMS_API_URL = "http://46.101.107.199/api/teams/"
+SOLO_PLAYERS_API_URL = "http://46.101.107.199/api/solo-players/"
+MY_TEAM_API_URL = "http://46.101.107.199/api/my-team/"
+JOIN_TEAM_API_URL = "http://46.101.107.199/api/join-team/"
+REMOVE_MEMBER_API_URL = "http://46.101.107.199/api/remove-member/"
+DELETE_TEAM_API_URL = "http://46.101.107.199/api/delete-team/"
+LEAVE_TEAM_API_URL = "http://46.101.107.199/api/leave-team/"
 
 # Excel fayl kerak emas - faqat Django bazasiga saqlaymiz
 
