@@ -22,7 +22,7 @@ class BotDataView(View):
                     return JsonResponse({'error': 'user_id va team_name maydonlari kerak'}, status=400)
             else:
                 # Ma'lumotlarni tekshirish
-                required_fields = ['fullname', 'birthdate', 'freefire_id', 'direction', 'phone', 'user_id', 'registration_type']
+                required_fields = ['fullname', 'freefire_id', 'phone', 'user_id', 'registration_type']
                 for field in required_fields:
                     if field not in data:
                         return JsonResponse({'error': f'{field} maydoni kerak'}, status=400)
@@ -40,9 +40,7 @@ class BotDataView(View):
                     user_id=data['user_id'],
                     defaults={
                         'fullname': data['fullname'],
-                        'birthdate': data['birthdate'],
                         'freefire_id': data['freefire_id'],
-                        'direction': data['direction'],
                         'phone': data['phone'],
                         'username': data.get('username', ''),
                         'registration_type': data['registration_type'],
@@ -75,8 +73,7 @@ class BotDataView(View):
                 
                 team = Team.objects.create(
                     name=data['team_name'],
-                    captain=player,
-                    direction=player.direction  # Sardorning viloyatini jamoa viloyati sifatida saqlash
+                    captain=player
                 )
                 player.team = team
                 player.save()
@@ -155,7 +152,6 @@ class CheckUserView(View):
                 'registered': True,
                 'user_data': {
                     'fullname': player.fullname,
-                    'direction': player.direction,
                     'registration_type': player.registration_type,
                     'status': player.status,
                     'created_at': player.created_at.strftime('%d.%m.%Y %H:%M')
@@ -190,7 +186,6 @@ class TeamsListView(View):
                 'captain_username': team.captain.username or 'username yo\'q',
                 'current_members': team.current_members_count,
                 'max_members': team.max_members,
-                'direction': team.direction,  # Jamoa viloyatini olish
                 'available_slots': team.available_slots
             })
         
@@ -215,7 +210,6 @@ class SoloPlayersListView(View):
                 'fullname': player.fullname,
                 'username': player.username or 'username yo\'q',
                 'freefire_id': player.freefire_id,
-                'direction': player.direction,
                 'status': player.get_status_display(),
                 'created_at': player.created_at.strftime('%d.%m.%Y')
             })
@@ -310,11 +304,6 @@ class JoinTeamView(View):
             if player.team and player.team.id != team.id:
                 return JsonResponse({'error': 'Siz allaqachon boshqa jamoadasiz'}, status=400)
             
-            # Viloyat tekshirish - faqat bir xil viloyatdagi o'yinchilar jamoa bo'lishi mumkin
-            if player.direction != team.direction:
-                return JsonResponse({
-                    'error': f'Faqat {team.direction} viloyatidagi o\'yinchilar bu jamoaga qo\'shilishi mumkin. Siz {player.direction} viloyatidasiz.'
-                }, status=400)
             
             # Jamoa kodiga qo'shilish
             player.team = team
@@ -528,7 +517,6 @@ class AllUsersView(View):
                     'user_id': user.user_id,
                     'fullname': user.fullname,
                     'username': user.username or '',
-                    'direction': user.direction,
                     'status': user.get_status_display(),
                     'created_at': user.created_at.strftime('%d.%m.%Y %H:%M')
                 })
