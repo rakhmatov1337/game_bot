@@ -44,6 +44,26 @@ def is_admin(user_id: int) -> bool:
     """Foydalanuvchi admin ekanligini tekshirish"""
     return user_id == ADMIN_ID
 
+# ===== Matnni bo'lib yuborish yordamchisi =====
+async def send_chunked_message(target, text: str, chunk_limit: int = 3500):
+    """Telegram 4096 belgidan katta matnlarni bo'lib yuborish.
+
+    target: Message yoki CallbackQuery.message (unda .answer mavjud) yoki Bot+chat_id kombinatsiyasida ishlatilmaydi.
+    """
+    if not text:
+        return
+    start = 0
+    length = len(text)
+    while start < length:
+        end = min(start + chunk_limit, length)
+        # Bo'linishni qator oxiriga yaqinlashtiramiz
+        if end < length:
+            nl = text.rfind("\n", start, end)
+            if nl != -1 and nl > start:
+                end = nl
+        await target.answer(text[start:end], parse_mode="HTML")
+        start = end
+
 # ===== STATES =====
 class RegistrationForm(StatesGroup):
     # Asosiy ma'lumotlar
@@ -325,11 +345,9 @@ async def about_university(message: Message):
 async def contact_info(message: Message):
     text = "📞 <b>Aloqa uchun:</b>\n\n"
     text += "Telefon raqam: <code>+998 73 495 01 51 9</code>\n\n"
-    text += "Yoki quyidagi havola orqali bog'laning:"
-    
+    text += "Telegram orqali bog'lanish uchun tugmadan foydalaning. Telefon havolalari Telegramda qo'llab-quvvatlanmasligi mumkin, shuning uchun raqamni nusxalab qo'ng'iroq qiling."
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📞 Telefon qilish", url="tel:+9987349501519")],
             [InlineKeyboardButton(text="👨‍💻 Telegram", url="https://telegram.me/Abdurakhim")]
         ]
     )
@@ -627,29 +645,33 @@ async def show_teams_list(message: Message):
 # ===== Solo o'yinchilar ro'yxati =====
 async def show_solo_players(message: Message):
     players = await get_solo_players()
-    
     if not players:
         await message.answer("❌ Hozircha solo o'yinchilar yo'q.")
         return
-    
-    text = "👤 <b>Solo o'yinchilar ro'yxati:</b>\n\n"
-    
+    header = "👤 <b>Solo o'yinchilar ro'yxati:</b>\n\n"
+    # Chunk bo'lib yuboramiz
+    chunk_text = header
     for player in players:
         fullname = player.get('fullname', 'Noma\'lum')
         freefire_id = player.get('freefire_id', 'Noma\'lum')
         direction = player.get('direction', 'Noma\'lum')
         username = player.get('username', 'username yo\'q')
         status = player.get('status', 'Noma\'lum')
-        
-        text += (
+        block = (
             f"👤 <b>{fullname}</b>\n"
             f"🎮 Free Fire ID: {freefire_id}\n"
             f"📍 Viloyat: {direction}\n"
             f"📊 Status: {status}\n"
             f"🔗 @{username}\n\n"
         )
-    
-    await message.answer(text, parse_mode="HTML")
+        # Agar juda uzun bo'lib ketsa, avvalgi qismini yuboramiz
+        if len(chunk_text) + len(block) > 3500:
+            await send_chunked_message(message, chunk_text)
+            chunk_text = ""
+        chunk_text += block
+    # Oxirgi qismni yuborish
+    if chunk_text:
+        await send_chunked_message(message, chunk_text)
 
 # ===== Mening jamoam =====
 async def show_my_team(message: Message):
