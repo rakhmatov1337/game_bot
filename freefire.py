@@ -87,7 +87,7 @@ def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🏆 Ro'yxatdan o'tish")],
-            [KeyboardButton(text="🏆 Jamoa yaratish"), KeyboardButton(text="🔍 Jamoalar ro'yxati")],
+            [KeyboardButton(text="🏆 Jamoa yaratish"), KeyboardButton(text="🔍 Gildiyalar ro'yxati")],
             [KeyboardButton(text="👤 Solo o'yinchilar"), KeyboardButton(text="👥 Mening jamoam")],
             [KeyboardButton(text="ℹ️ Ma'lumot"), KeyboardButton(text="📞 Aloqa uchun")]
         ],
@@ -160,7 +160,7 @@ async def get_available_teams():
         else:
             return []
     except Exception as e:
-        print(f"Jamoalar ro'yxatini olishda xato: {e}")
+        print(f"Gildiyalar ro'yxatini olishda xato: {e}")
         return []
 
 async def get_solo_players():
@@ -344,8 +344,7 @@ async def about_university(message: Message):
 # ===== Aloqa uchun =====
 async def contact_info(message: Message):
     text = "📞 <b>Aloqa uchun:</b>\n\n"
-    text += "Telefon raqam: +998 73 495 01 51\n\n"
-    text += "Telegram orqali bog'lanish uchun tugmadan foydalaning. Telefon havolalari Telegramda qo'llab-quvvatlanmasligi mumkin, shuning uchun raqamni nusxalab qo'ng'iroq qiling."
+    text += "Telegram orqali bog'lanish uchun tugmadan foydalaning."
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="👨‍💻 Telegram", url="https://telegram.me/Azamxon_s")]
@@ -614,12 +613,12 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     await message.answer(success_message, reply_markup=main_menu(), parse_mode="HTML")
     await state.clear()
 
-# ===== Jamoalar ro'yxati =====
+# ===== Gildiyalar ro'yxati =====
 async def show_teams_list(message: Message, page: int = 0):
     teams = await get_available_teams()
     
     if not teams:
-        await message.answer("❌ Hozircha mavjud jamoalar yo'q.")
+        await message.answer("❌ Hozircha mavjud gildiyalar yo'q.")
         return
     
     # Pagination sozlamalari
@@ -631,7 +630,7 @@ async def show_teams_list(message: Message, page: int = 0):
     # Joriy sahifadagi jamoalar
     current_teams = teams[start_idx:end_idx]
     
-    text = f"🏆 <b>Mavjud jamoalar ro'yxati:</b>\n"
+    text = f"🏰 <b>Mavjud gildiyalar ro'yxati:</b>\n"
     text += f"📄 Sahifa {page + 1}/{total_pages}\n\n"
     
     for team in current_teams:
@@ -647,23 +646,21 @@ async def show_teams_list(message: Message, page: int = 0):
             text = text.replace('.', '\\.').replace('!', '\\!')
             return text[:50]  # Uzunlikni cheklash
         
-        team_name = safe_text(team.get('name', 'Noma\'lum'))
+        guild_name = safe_text(team.get('name', 'Noma\'lum'))
         captain_name = safe_text(team.get('captain_name', 'Noma\'lum'))
         current_members = team.get('current_members', 0)
         max_members = team.get('max_members', 4)
-        direction = safe_text(team.get('direction', 'Noma\'lum'))
         captain_username = safe_text(team.get('captain_username', 'username yo\'q'))
         
-        # To'liq bo'lgan jamoalarni ajratib ko'rsatish
+        # To'liq bo'lgan gildiyalarni ajratib ko'rsatish
         is_full = current_members >= max_members
         status_icon = "🔒" if is_full else "✅"
         status_text = " (TO'LIQ)" if is_full else ""
         
         text += (
-            f"{status_icon} <b>{team_name}{status_text}</b>\n"
+            f"{status_icon} <b>{guild_name}{status_text}</b>\n"
             f"👑 Sardor: {captain_name}\n"
             f"👥 A'zolar: {current_members}/{max_members}\n"
-            f"📍 Viloyat: {direction}\n"
             f"🔗 @{captain_username}\n\n"
         )
     
@@ -1141,7 +1138,7 @@ async def main():
     dp.message.register(contact_info, F.text == "📞 Aloqa uchun")
     dp.message.register(registration_start, F.text == "🏆 Ro'yxatdan o'tish")
     dp.message.register(create_team_start, F.text == "🏆 Jamoa yaratish")
-    dp.message.register(show_teams_list, F.text == "🔍 Jamoalar ro'yxati")
+    dp.message.register(show_teams_list, F.text == "🔍 Gildiyalar ro'yxati")
     dp.message.register(show_solo_players, F.text == "👤 Solo o'yinchilar")
     dp.message.register(show_my_team, F.text == "👥 Mening jamoam")
     
