@@ -348,7 +348,7 @@ async def contact_info(message: Message):
     text += "Telegram orqali bog'lanish uchun tugmadan foydalaning. Telefon havolalari Telegramda qo'llab-quvvatlanmasligi mumkin, shuning uchun raqamni nusxalab qo'ng'iroq qiling."
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="👨‍💻 Telegram", url="https://telegram.me/Abdurakhim")]
+            [InlineKeyboardButton(text="👨‍💻 Telegram", url="https://telegram.me/Azamxon_s")]
         ]
     )
     await message.answer(text, reply_markup=link_btn, parse_mode="HTML")
