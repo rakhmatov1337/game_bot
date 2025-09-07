@@ -615,16 +615,26 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     await state.clear()
 
 # ===== Jamoalar ro'yxati =====
-async def show_teams_list(message: Message):
+async def show_teams_list(message: Message, page: int = 0):
     teams = await get_available_teams()
     
     if not teams:
         await message.answer("❌ Hozircha mavjud jamoalar yo'q.")
         return
     
-    text = "🏆 <b>Mavjud jamoalar ro'yxati:</b>\n\n"
+    # Pagination sozlamalari
+    items_per_page = 5
+    total_pages = (len(teams) + items_per_page - 1) // items_per_page
+    start_idx = page * items_per_page
+    end_idx = start_idx + items_per_page
     
-    for team in teams:
+    # Joriy sahifadagi jamoalar
+    current_teams = teams[start_idx:end_idx]
+    
+    text = f"🏆 <b>Mavjud jamoalar ro'yxati:</b>\n"
+    text += f"📄 Sahifa {page + 1}/{total_pages}\n\n"
+    
+    for team in current_teams:
         team_name = team.get('name', 'Noma\'lum')
         captain_name = team.get('captain_name', 'Noma\'lum')
         current_members = team.get('current_members', 0)
@@ -632,46 +642,90 @@ async def show_teams_list(message: Message):
         direction = team.get('direction', 'Noma\'lum')
         captain_username = team.get('captain_username', 'username yo\'q')
         
+        # To'liq bo'lgan jamoalarni ajratib ko'rsatish
+        is_full = current_members >= max_members
+        status_icon = "🔒" if is_full else "✅"
+        status_text = " (TO'LIQ)" if is_full else ""
+        
         text += (
-            f"🏆 <b>{team_name}</b>\n"
+            f"{status_icon} <b>{team_name}{status_text}</b>\n"
             f"👑 Sardor: {captain_name}\n"
             f"👥 A'zolar: {current_members}/{max_members}\n"
             f"📍 Viloyat: {direction}\n"
             f"🔗 @{captain_username}\n\n"
         )
     
-    await message.answer(text, parse_mode="HTML")
+    # Navigation buttonlari
+    keyboard = []
+    nav_buttons = []
+    
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⬅️ Oldingi", callback_data=f"teams_page_{page-1}"))
+    
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("Keyingi ➡️", callback_data=f"teams_page_{page+1}"))
+    
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    
+    keyboard.append([InlineKeyboardButton("🔙 Orqaga", callback_data="back_to_main")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
 
 # ===== Solo o'yinchilar ro'yxati =====
-async def show_solo_players(message: Message):
+async def show_solo_players(message: Message, page: int = 0):
     players = await get_solo_players()
     if not players:
         await message.answer("❌ Hozircha solo o'yinchilar yo'q.")
         return
-    header = "👤 <b>Solo o'yinchilar ro'yxati:</b>\n\n"
-    # Chunk bo'lib yuboramiz
-    chunk_text = header
-    for player in players:
+    
+    # Pagination sozlamalari
+    items_per_page = 8
+    total_pages = (len(players) + items_per_page - 1) // items_per_page
+    start_idx = page * items_per_page
+    end_idx = start_idx + items_per_page
+    
+    # Joriy sahifadagi o'yinchilar
+    current_players = players[start_idx:end_idx]
+    
+    text = f"👤 <b>Solo o'yinchilar ro'yxati:</b>\n"
+    text += f"📄 Sahifa {page + 1}/{total_pages}\n\n"
+    
+    for player in current_players:
         fullname = player.get('fullname', 'Noma\'lum')
         freefire_id = player.get('freefire_id', 'Noma\'lum')
         direction = player.get('direction', 'Noma\'lum')
         username = player.get('username', 'username yo\'q')
         status = player.get('status', 'Noma\'lum')
-        block = (
+        
+        text += (
             f"👤 <b>{fullname}</b>\n"
             f"🎮 Free Fire ID: {freefire_id}\n"
             f"📍 Viloyat: {direction}\n"
             f"📊 Status: {status}\n"
             f"🔗 @{username}\n\n"
         )
-        # Agar juda uzun bo'lib ketsa, avvalgi qismini yuboramiz
-        if len(chunk_text) + len(block) > 3500:
-            await send_chunked_message(message, chunk_text)
-            chunk_text = ""
-        chunk_text += block
-    # Oxirgi qismni yuborish
-    if chunk_text:
-        await send_chunked_message(message, chunk_text)
+    
+    # Navigation buttonlari
+    keyboard = []
+    nav_buttons = []
+    
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⬅️ Oldingi", callback_data=f"solo_page_{page-1}"))
+    
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("Keyingi ➡️", callback_data=f"solo_page_{page+1}"))
+    
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    
+    keyboard.append([InlineKeyboardButton("🔙 Orqaga", callback_data="back_to_main")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
 
 # ===== Mening jamoam =====
 async def show_my_team(message: Message):
@@ -1039,6 +1093,17 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                     ]
                 )
                 await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+    
+    # Pagination handlerlari
+    elif callback.data.startswith("teams_page_"):
+        page = int(callback.data.split("_")[2])
+        await show_teams_list(callback.message, page)
+        await callback.answer()
+    
+    elif callback.data.startswith("solo_page_"):
+        page = int(callback.data.split("_")[2])
+        await show_solo_players(callback.message, page)
+        await callback.answer()
 
 # ===== MAIN =====
 async def main():

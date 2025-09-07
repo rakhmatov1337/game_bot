@@ -179,8 +179,7 @@ class TeamsListView(View):
     
     def get(self, request):
         teams = Team.objects.filter(is_active=True)
-        # Faqat to'liq bo'lmagan jamoalarni qaytarish
-        teams = [team for team in teams if not team.is_full]
+        # Barcha jamoalarni qaytarish (to'liq bo'lganlar ham)
         teams_data = []
         
         for team in teams:
