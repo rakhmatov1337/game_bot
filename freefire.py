@@ -344,7 +344,7 @@ async def about_university(message: Message):
 # ===== Aloqa uchun =====
 async def contact_info(message: Message):
     text = "📞 <b>Aloqa uchun:</b>\n\n"
-    text += "Telefon raqam: <code>+998 73 495 01 51 9</code>\n\n"
+    text += "Telefon raqam: +998 73 495 01 51 9\n\n"
     text += "Telegram orqali bog'lanish uchun tugmadan foydalaning. Telefon havolalari Telegramda qo'llab-quvvatlanmasligi mumkin, shuning uchun raqamni nusxalab qo'ng'iroq qiling."
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -502,7 +502,7 @@ async def process_freefire_id(message: Message, state: FSMContext):
         "Andijon", "Farg'ona", "Namangan", "Toshkent",
         "Sirdaryo", "Jizzax", "Samarqand", "Qashqadaryo",
         "Surxondaryo", "Navoiy", "Buxoro", "Xorazm",
-        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston"
+        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston", "Tojikiston"
     ]
 
     row_width = 2
@@ -794,6 +794,32 @@ async def process_broadcast(message: Message, state: FSMContext, bot: Bot):
     )
     await state.clear()
 
+async def cmd_list_all_users(message: Message):
+    """Admin uchun barcha foydalanuvchilar ro'yxatini chiqarish (/all)"""
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ Siz admin emassiz!")
+        return
+    users = await get_all_users()
+    if not users:
+        await message.answer("❌ Foydalanuvchilar topilmadi!")
+        return
+    header = f"👥 <b>Foydalanuvchilar ro'yxati</b> (jami: {len(users)})\n\n"
+    text = header
+    index = 1
+    for u in users:
+        username = u.get('username') or '—'
+        block = (
+            f"{index}. {u.get('fullname','Noma\'lum')} (@{username})\n"
+            f"   ID: {u.get('user_id')} | 📍 {u.get('direction','—')} | {u.get('status','—')}\n\n"
+        )
+        if len(text) + len(block) > 3500:
+            await send_chunked_message(message, text)
+            text = ""
+        text += block
+        index += 1
+    if text:
+        await send_chunked_message(message, text)
+
 # ===== Callback query handler =====
 async def handle_callback(callback: CallbackQuery, bot: Bot):
     if callback.data == "check_subscription":
@@ -1016,7 +1042,8 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.message.register(cmd_start, Command("start"))
-    dp.message.register(cmd_broadcast, Command("broadcast"))
+    dp.message.register(cmd_broadcast, Command(["broadcast", "message"]))
+    dp.message.register(cmd_list_all_users, Command(["all"]))
     dp.message.register(about_university, F.text == "ℹ️ Ma'lumot")
     dp.message.register(contact_info, F.text == "📞 Aloqa uchun")
     dp.message.register(registration_start, F.text == "🏆 Ro'yxatdan o'tish")
