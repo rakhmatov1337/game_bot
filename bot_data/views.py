@@ -75,7 +75,8 @@ class BotDataView(View):
                 
                 team = Team.objects.create(
                     name=data['team_name'],
-                    captain=player
+                    captain=player,
+                    direction=player.direction  # Sardorning viloyatini jamoa viloyati sifatida saqlash
                 )
                 player.team = team
                 player.save()
@@ -190,7 +191,7 @@ class TeamsListView(View):
                 'captain_username': team.captain.username or 'username yo\'q',
                 'current_members': team.current_members_count,
                 'max_members': team.max_members,
-                'direction': team.captain.direction,
+                'direction': team.direction,  # Jamoa viloyatini olish
                 'available_slots': team.available_slots
             })
         
@@ -310,6 +311,12 @@ class JoinTeamView(View):
             if player.team and player.team.id != team.id:
                 return JsonResponse({'error': 'Siz allaqachon boshqa jamoadasiz'}, status=400)
             
+            # Viloyat tekshirish - faqat bir xil viloyatdagi o'yinchilar jamoa bo'lishi mumkin
+            if player.direction != team.direction:
+                return JsonResponse({
+                    'error': f'Faqat {team.direction} viloyatidagi o\'yinchilar bu jamoaga qo\'shilishi mumkin. Siz {player.direction} viloyatidasiz.'
+                }, status=400)
+            
             # Jamoa kodiga qo'shilish
             player.team = team
             player.registration_type = 'team'
@@ -403,6 +410,102 @@ class RemoveMemberView(View):
                 'success': True,
                 'message': f'{member.fullname} jamoadan chiqarildi',
                 'member_name': member.fullname
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Noto\'g\'ri JSON format'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DeleteTeamView(View):
+    """Jamoa sardori tomonidan jamoani o'chirish"""
+    
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            captain_id = data.get('captain_id')
+            
+            if not captain_id:
+                return JsonResponse({'error': 'captain_id kerak'}, status=400)
+            
+            # Sardorni topish
+            try:
+                captain = Player.objects.get(user_id=captain_id)
+            except Player.DoesNotExist:
+                return JsonResponse({'error': 'Sardor topilmadi'}, status=404)
+            
+            # Sardor jamoada ekanligini tekshirish
+            if not captain.team or captain != captain.team.captain:
+                return JsonResponse({'error': 'Siz jamoa sardori emassiz'}, status=403)
+            
+            team = captain.team
+            team_name = team.name
+            
+            # Barcha jamoa a'zolarini solo o'yinchi qilish
+            for member in team.members.all():
+                member.team = None
+                member.registration_type = 'solo'
+                member.save()
+                # Solo o'yinchi sifatida qayta yaratish
+                SoloPlayer.objects.get_or_create(player=member, defaults={'looking_for_team': True})
+            
+            # Jamoa nomini o'chirish
+            team.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Jamoa "{team_name}" muvaffaqiyatli o\'chirildi',
+                'team_name': team_name
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Noto\'g\'ri JSON format'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LeaveTeamView(View):
+    """Jamoa a'zosi tomonidan jamoadan chiqish"""
+    
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+            
+            if not user_id:
+                return JsonResponse({'error': 'user_id kerak'}, status=400)
+            
+            # Foydalanuvchini topish
+            try:
+                player = Player.objects.get(user_id=user_id)
+            except Player.DoesNotExist:
+                return JsonResponse({'error': 'Foydalanuvchi topilmadi'}, status=404)
+            
+            # Foydalanuvchi jamoada ekanligini tekshirish
+            if not player.team:
+                return JsonResponse({'error': 'Siz hech qanday jamoada emassiz'}, status=400)
+            
+            # Sardor bo'lsa, jamoani o'chirishga ruxsat bermaslik
+            if player == player.team.captain:
+                return JsonResponse({'error': 'Siz jamoa sardorisiz. Jamoani o\'chirish uchun "Jamoani o\'chirish" tugmasini bosing'}, status=400)
+            
+            team_name = player.team.name
+            
+            # Jamoadan chiqish
+            player.team = None
+            player.registration_type = 'solo'
+            player.save()
+            
+            # Solo o'yinchi sifatida qayta yaratish
+            SoloPlayer.objects.get_or_create(player=player, defaults={'looking_for_team': True})
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'"{team_name}" jamoasidan muvaffaqiyatli chiqdingiz',
+                'team_name': team_name
             })
             
         except json.JSONDecodeError:

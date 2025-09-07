@@ -7,6 +7,7 @@ class Team(models.Model):
     """Jamoa modeli"""
     name = models.CharField(max_length=100, verbose_name="Jamoa nomi")
     captain = models.ForeignKey('Player', on_delete=models.CASCADE, related_name='captained_teams', verbose_name="Jamoa sardori")
+    direction = models.CharField(max_length=100, default="Toshkent", verbose_name="Viloyat")
     referral_code = models.UUIDField(default=uuid.uuid4, unique=True, verbose_name="Referal kodi")
     max_members = models.IntegerField(default=4, verbose_name="Maksimal a'zolar soni")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Yaratilgan vaqt")

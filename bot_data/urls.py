@@ -9,6 +9,8 @@ urlpatterns = [
     path('api/my-team/<int:user_id>/', views.MyTeamView.as_view(), name='my_team_api'),
     path('api/join-team/', views.JoinTeamView.as_view(), name='join_team_api'),
     path('api/remove-member/', views.RemoveMemberView.as_view(), name='remove_member_api'),
+    path('api/delete-team/', views.DeleteTeamView.as_view(), name='delete_team_api'),
+    path('api/leave-team/', views.LeaveTeamView.as_view(), name='leave_team_api'),
     path('api/channels/', views.SubscriptionChannelsView.as_view(), name='channels_api'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
 ]

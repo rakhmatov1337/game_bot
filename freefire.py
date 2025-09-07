@@ -31,6 +31,8 @@ SOLO_PLAYERS_API_URL = "http://127.0.0.1:8000/api/solo-players/"
 MY_TEAM_API_URL = "http://127.0.0.1:8000/api/my-team/"
 JOIN_TEAM_API_URL = "http://127.0.0.1:8000/api/join-team/"
 REMOVE_MEMBER_API_URL = "http://127.0.0.1:8000/api/remove-member/"
+DELETE_TEAM_API_URL = "http://127.0.0.1:8000/api/delete-team/"
+LEAVE_TEAM_API_URL = "http://127.0.0.1:8000/api/leave-team/"
 
 # Excel fayl kerak emas - faqat Django bazasiga saqlaymiz
 
@@ -175,6 +177,26 @@ async def remove_team_member(captain_id, member_id):
         print(f"A'zo chiqarishda xato: {e}")
         return False, {'error': str(e)}
 
+async def delete_team(captain_id):
+    """Jamoa sardori tomonidan jamoani o'chirish"""
+    try:
+        data = {'captain_id': captain_id}
+        response = requests.post(DELETE_TEAM_API_URL, json=data, timeout=10)
+        return response.status_code == 200, response.json()
+    except Exception as e:
+        print(f"Jamoa o'chirishda xato: {e}")
+        return False, {'error': str(e)}
+
+async def leave_team(user_id):
+    """Jamoa a'zosi tomonidan jamoadan chiqish"""
+    try:
+        data = {'user_id': user_id}
+        response = requests.post(LEAVE_TEAM_API_URL, json=data, timeout=10)
+        return response.status_code == 200, response.json()
+    except Exception as e:
+        print(f"Jamoadan chiqishda xato: {e}")
+        return False, {'error': str(e)}
+
 async def check_user_exists(user_id):
     """Foydalanuvchi mavjudligini tekshirish"""
     try:
@@ -274,13 +296,17 @@ async def about_university(message: Message):
 
 # ===== Aloqa uchun =====
 async def contact_info(message: Message):
-    text = "Aloqaga chiqish uchun quyidagi havolani bosing:"
+    text = "📞 <b>Aloqa uchun:</b>\n\n"
+    text += "Telefon raqam: <code>+998 73 495 01 51 9</code>\n\n"
+    text += "Yoki quyidagi havola orqali bog'laning:"
+    
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="👨‍💻 Aloqa uchun", url="https://telegram.me/Abdurakhim")]
+            [InlineKeyboardButton(text="📞 Telefon qilish", url="tel:+9987349501519")],
+            [InlineKeyboardButton(text="👨‍💻 Telegram", url="https://telegram.me/Abdurakhim")]
         ]
     )
-    await message.answer(text, reply_markup=link_btn)
+    await message.answer(text, reply_markup=link_btn, parse_mode="HTML")
 
 # ===== Ro'yxatdan o'tish boshlanishi =====
 async def registration_start(message: Message, state: FSMContext):
@@ -361,7 +387,8 @@ async def process_team_name(message: Message, state: FSMContext):
             f"✅ <b>Jamoa muvaffaqiyatli yaratildi!</b>\n\n"
             f"🏆 Jamoa nomi: {team_name}\n"
             f"👑 Siz jamoa sardorisiz\n\n"
-            f"🔗 <b>Referal link:</b>\n{referral_link}\n\n"
+            f"🔗 <b>Referal link:</b>\n"
+            f"{referral_link}\n\n"
             f"Bu linkni boshqalarga yuboring va ular sizning jamoangizga qo'shiladi!"
         )
     else:
@@ -579,7 +606,7 @@ async def show_my_team(message: Message):
             f"📛 Jamoa nomi: {team_name}\n"
             f"👑 Sardor: {captain_name}\n"
             f"👥 A'zolar: {current_members}/{max_members}\n"
-            f"🔗 Referal link: <code>{referral_link}</code>\n\n"
+            f"🔗 Referal link:\n{referral_link}\n\n"
             f"<b>Jamoa a'zolari:</b>\n"
         )
         
@@ -595,12 +622,19 @@ async def show_my_team(message: Message):
                 inline_keyboard=[
                     [InlineKeyboardButton(text="👥 A'zo qo'shish", callback_data="add_member")],
                     [InlineKeyboardButton(text="❌ A'zo chiqarish", callback_data="remove_member")],
-                    [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")]
+                    [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")],
+                    [InlineKeyboardButton(text="🗑️ Jamoani o'chirish", callback_data="delete_team")]
                 ]
             )
             await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
         else:
-            await message.answer(text, parse_mode="HTML")
+            # A'zolar uchun jamoadan chiqish tugmasi
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="🚪 Jamoadan chiqish", callback_data="leave_team")]
+                ]
+            )
+            await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
     else:
         error_msg = result.get('error', 'Noma\'lum xato')
         await message.answer(f"❌ Siz hali hech qanday jamoaga qo'shilmagansiz.\n\nSabab: {error_msg}")
@@ -609,14 +643,55 @@ async def show_my_team(message: Message):
 async def handle_callback(callback: CallbackQuery, bot: Bot):
     if callback.data == "check_subscription":
         if await check_subscription(bot, callback.from_user.id):
-            await callback.message.edit_text(
-                f"✅ Rahmat! Siz barcha kanallarga obuna bo'lgansiz.\n\n"
-                f"Endi botdan to'liq foydalanishingiz mumkin!"
-            )
-            await callback.message.answer(
-                "Asosiy menyu:",
-                reply_markup=main_menu()
-            )
+            # Agar foydalanuvchida pending referal kod bo'lsa, jamoaga qo'shilish
+            if callback.from_user.id in pending_referral_codes:
+                referral_code = pending_referral_codes[callback.from_user.id]
+                del pending_referral_codes[callback.from_user.id]  # O'chirish
+                
+                # Foydalanuvchi ro'yxatdan o'tganligini tekshirish
+                success, result = await check_user_exists(callback.from_user.id)
+                if success and result.get('exists', False):
+                    # Foydalanuvchi mavjud, jamoaga qo'shilish
+                    success, result = await join_team_by_code(callback.from_user.id, referral_code)
+                    
+                    if success:
+                        team_name = result.get('team_name', 'Noma\'lum')
+                        captain_name = result.get('captain_name', 'Noma\'lum')
+                        await callback.message.edit_text(
+                            f"✅ <b>Obuna tekshirildi va jamoaga qo'shildingiz!</b>\n\n"
+                            f"🏆 Jamoa: {team_name}\n"
+                            f"👑 Sardor: {captain_name}\n\n"
+                            f"Endi turnir uchun tayyorlaning! 🔥",
+                            parse_mode="HTML"
+                        )
+                    else:
+                        error_msg = result.get('error', 'Noma\'lum xato')
+                        await callback.message.edit_text(
+                            f"✅ <b>Obuna tekshirildi!</b>\n\n"
+                            f"❌ Jamoaga qo'shila olmadingiz: {error_msg}",
+                            parse_mode="HTML"
+                        )
+                else:
+                    # Foydalanuvchi ro'yxatdan o'tmagan, referal kodni saqlash
+                    await callback.message.edit_text(
+                        f"✅ <b>Obuna tekshirildi!</b>\n\n"
+                        f"Jamoaga qo'shilish uchun ro'yxatdan o'ting:",
+                        parse_mode="HTML"
+                    )
+                
+                await callback.message.answer(
+                    "Asosiy menyu:",
+                    reply_markup=main_menu()
+                )
+            else:
+                await callback.message.edit_text(
+                    f"✅ Rahmat! Siz barcha kanallarga obuna bo'lgansiz.\n\n"
+                    f"Endi botdan to'liq foydalanishingiz mumkin!"
+                )
+                await callback.message.answer(
+                    "Asosiy menyu:",
+                    reply_markup=main_menu()
+                )
         else:
             await callback.answer("❌ Hali ham barcha kanallarga obuna bo'lmagansiz!", show_alert=True)
     
@@ -630,7 +705,7 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             
             await callback.message.edit_text(
                 f"🔗 <b>Referal link:</b>\n\n"
-                f"<code>{referral_link}</code>\n\n"
+                f"{referral_link}\n\n"
                 f"Bu linkni boshqalarga yuboring va ular sizning jamoangizga qo'shiladi!",
                 parse_mode="HTML"
             )
@@ -691,6 +766,46 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
             error_msg = result.get('error', 'Noma\'lum xato')
             await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
     
+    elif callback.data == "delete_team":
+        # Jamoani o'chirish
+        success, result = await delete_team(callback.from_user.id)
+        
+        if success:
+            team_name = result.get('team_name', 'Noma\'lum')
+            await callback.message.edit_text(
+                f"✅ <b>Jamoa muvaffaqiyatli o'chirildi!</b>\n\n"
+                f"🗑️ Jamoa: {team_name}\n\n"
+                f"Barcha jamoa a'zolari endi solo o'yinchi sifatida ro'yxatda.",
+                parse_mode="HTML"
+            )
+            await callback.message.answer(
+                "Asosiy menyu:",
+                reply_markup=main_menu()
+            )
+        else:
+            error_msg = result.get('error', 'Noma\'lum xato')
+            await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
+    
+    elif callback.data == "leave_team":
+        # Jamoadan chiqish
+        success, result = await leave_team(callback.from_user.id)
+        
+        if success:
+            team_name = result.get('team_name', 'Noma\'lum')
+            await callback.message.edit_text(
+                f"✅ <b>Jamoadan muvaffaqiyatli chiqdingiz!</b>\n\n"
+                f"🚪 Jamoa: {team_name}\n\n"
+                f"Endi siz solo o'yinchi sifatida ro'yxatdasiz.",
+                parse_mode="HTML"
+            )
+            await callback.message.answer(
+                "Asosiy menyu:",
+                reply_markup=main_menu()
+            )
+        else:
+            error_msg = result.get('error', 'Noma\'lum xato')
+            await callback.answer(f"❌ Xato: {error_msg}", show_alert=True)
+    
     elif callback.data == "back_to_team":
         # Jamoaga qaytish
         success, result = await get_my_team(callback.from_user.id)
@@ -710,7 +825,7 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                 f"📛 Jamoa nomi: {team_name}\n"
                 f"👑 Sardor: {captain_name}\n"
                 f"👥 A'zolar: {current_members}/{max_members}\n"
-                f"🔗 Referal link: <code>{referral_link}</code>\n\n"
+                f"🔗 Referal link:\n{referral_link}\n\n"
                 f"<b>Jamoa a'zolari:</b>\n"
             )
             
@@ -726,12 +841,19 @@ async def handle_callback(callback: CallbackQuery, bot: Bot):
                     inline_keyboard=[
                         [InlineKeyboardButton(text="👥 A'zo qo'shish", callback_data="add_member")],
                         [InlineKeyboardButton(text="❌ A'zo chiqarish", callback_data="remove_member")],
-                        [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")]
+                        [InlineKeyboardButton(text="🔗 Referal link", callback_data="get_referral_link")],
+                        [InlineKeyboardButton(text="🗑️ Jamoani o'chirish", callback_data="delete_team")]
                     ]
                 )
                 await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
             else:
-                await callback.message.edit_text(text, parse_mode="HTML")
+                # A'zolar uchun jamoadan chiqish tugmasi
+                keyboard = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [InlineKeyboardButton(text="🚪 Jamoadan chiqish", callback_data="leave_team")]
+                    ]
+                )
+                await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
 
 # ===== MAIN =====
 async def main():
