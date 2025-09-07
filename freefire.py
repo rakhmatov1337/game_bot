@@ -344,7 +344,7 @@ async def about_university(message: Message):
 # ===== Aloqa uchun =====
 async def contact_info(message: Message):
     text = "📞 <b>Aloqa uchun:</b>\n\n"
-    text += "Telefon raqam: +998 73 495 01 51 9\n\n"
+    text += "Telefon raqam: +998 73 495 01 51\n\n"
     text += "Telegram orqali bog'lanish uchun tugmadan foydalaning. Telefon havolalari Telegramda qo'llab-quvvatlanmasligi mumkin, shuning uchun raqamni nusxalab qo'ng'iroq qiling."
     link_btn = InlineKeyboardMarkup(
         inline_keyboard=[
