@@ -281,14 +281,20 @@ async def cmd_start(message: Message, bot: Bot):
         reply_markup=main_menu()
     )
 
-# ===== Universitet haqida =====
+# ===== Turnir haqida =====
 async def about_university(message: Message):
     info_text = """
-🏆 <b>VILOYATLAR O'RTASIDA TURNIR</b> 🏆
+📋 <b>Turnir Ma'lumotlari:</b>
 
 💰 <b>Qo'yilgan summa:</b> 4000 💎
 🎮 <b>O'yin tartibi:</b> Squad 4
-📅 <b>Boshlanish sanasi:</b> 15 Sentabrdan
+📅 <b>Boshlanish sanasi:</b> 13 Sentabr
+
+🎯 <b>Qatnashish uchun:</b>
+
+1️⃣ Jamoa tuzing yoki mavjud jamoaga qo'shiling
+2️⃣ Viloyatingizni belgilang
+3️⃣ Turnir qoidalariga rioya qiling
 
 💪 <b>Omad tilaymiz!</b>
     """

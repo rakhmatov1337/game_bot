@@ -70,7 +70,7 @@ python freefire.py
 7. Referal link orqali boshqalar jamoaga qo'shiladi
 
 ### Django Admin:
-1. `http://127.0.0.1:8000/admin/` ga o'tish
+1. `http://46.101.107.199/admin/` ga o'tish
 2. Superuser bilan kirish
 3. Bot foydalanuvchilarini ko'rish va boshqarish
 
@@ -103,6 +103,35 @@ game_bot/
     └── urls.py             # URL konfiguratsiyasi
 ```
 
+## DigitalOcean Deployment
+
+### Avtomatik deployment:
+```bash
+# Server ga ulanish
+ssh root@46.101.107.199
+
+# Repository ni klonlash
+git clone https://github.com/rakhmatov1337/game_bot.git
+cd game_bot
+
+# Deployment script ni ishga tushirish
+chmod +x deploy.sh
+./deploy.sh
+```
+
+### Manual deployment:
+```bash
+# Docker Compose bilan
+docker-compose up -d
+
+# Yoki alohida
+python manage.py runserver 0.0.0.0:8000
+```
+
+### Production URL:
+- **Django Admin**: http://46.101.107.199/admin/
+- **API Base**: http://46.101.107.199/api/
+
 ## Eslatmalar
 
 - Bot ishlashi uchun Django server ishga tushirilgan bo'lishi kerak
@@ -112,3 +141,4 @@ game_bot/
 - Jamoa sardori a'zolarni chiqarib yuborishi mumkin
 - Referal link orqali boshqalar jamoaga qo'shiladi
 - Bot username: @Free_Fire_turnirbot
+- Production server: 46.101.107.199

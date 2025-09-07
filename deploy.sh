@@ -149,6 +149,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable game-bot.service
 
 echo "✅ Deployment completed!"
-echo "🌐 Your application should be available at: http://your-server-ip"
+echo "🌐 Your application should be available at: http://46.101.107.199"
 echo "📊 Check status with: docker-compose ps"
 echo "📝 View logs with: docker-compose logs -f"

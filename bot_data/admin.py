@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Team, Player, SoloPlayer, SubscriptionChannel
+from .models import Team, Player, SoloPlayer
 
 
 @admin.register(Team)
@@ -63,17 +63,3 @@ class SoloPlayerAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(SubscriptionChannel)
-class SubscriptionChannelAdmin(admin.ModelAdmin):
-    list_display = ['name', 'channel_type', 'is_required', 'is_active']
-    list_filter = ['channel_type', 'is_required', 'is_active']
-    search_fields = ['name', 'url']
-    
-    fieldsets = (
-        ('Kanal ma\'lumotlari', {
-            'fields': ('name', 'channel_type', 'url')
-        }),
-        ('Sozlamalar', {
-            'fields': ('is_required', 'is_active')
-        }),
-    )
