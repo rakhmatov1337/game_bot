@@ -1046,8 +1046,8 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.message.register(cmd_start, Command("start"))
-    dp.message.register(cmd_broadcast, Command(["broadcast", "message"]))
-    dp.message.register(cmd_list_all_users, Command(["all"]))
+    dp.message.register(cmd_broadcast, Command("broadcast", "message"))
+    dp.message.register(cmd_list_all_users, Command("all"))
     dp.message.register(about_university, F.text == "ℹ️ Ma'lumot")
     dp.message.register(contact_info, F.text == "📞 Aloqa uchun")
     dp.message.register(registration_start, F.text == "🏆 Ro'yxatdan o'tish")
