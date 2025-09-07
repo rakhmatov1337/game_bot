@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.env
+.env.*
+env/
+ENV/
+venv/
+.venv/
+venv*/
+
+# Django
+db.sqlite3
+media/
+static/
+staticfiles/
+
+# Logs
+*.log
+logs/
+celerybeat-schedule
+
+# Testing / Coverage / Caches
+.pytest_cache/
+.tox/
+.mypy_cache/
+.cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE / Editors
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker (local overrides)
+docker-compose.override.yml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (if present)
+node_modules/
+

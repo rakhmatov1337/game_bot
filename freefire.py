@@ -15,7 +15,7 @@ from aiogram.filters import Command
 
 uniname = "Free fire turnir"
 # ===== CONFIG =====
-API_TOKEN = "5821696455:AAEeZ-5YfrOJO_rNqsPToPJ3tRYkan2FCXk"
+API_TOKEN = "8111560279:AAFZgi8AtDRgjVcEj6JLS0OFwE3uklZz7z0"
 ADMIN_ID = 7931426337          # Admin ID
 
 # Majburiy obuna linklari
