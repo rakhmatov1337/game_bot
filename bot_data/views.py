@@ -514,6 +514,39 @@ class LeaveTeamView(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class AllUsersView(View):
+    """Barcha foydalanuvchilarni olish"""
+    
+    def get(self, request):
+        try:
+            users = Player.objects.filter(is_active=True)
+            users_data = []
+            
+            for user in users:
+                users_data.append({
+                    'id': user.id,
+                    'user_id': user.user_id,
+                    'fullname': user.fullname,
+                    'username': user.username or '',
+                    'direction': user.direction,
+                    'status': user.get_status_display(),
+                    'created_at': user.created_at.strftime('%d.%m.%Y %H:%M')
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'users': users_data,
+                'total_count': len(users_data)
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+
 def admin_dashboard(request):
     """Admin dashboard sahifasi"""
     total_players = Player.objects.count()

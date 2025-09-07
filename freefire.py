@@ -15,7 +15,7 @@ from aiogram.filters import Command
 
 uniname = "Free fire turnir"
 # ===== CONFIG =====
-API_TOKEN = "8111560279:AAErxY2923NX2407ck7erOu0jLAZ_dKXXCc"
+API_TOKEN = "5821696455:AAEeZ-5YfrOJO_rNqsPToPJ3tRYkan2FCXk"
 ADMIN_ID = 7931426337          # Admin ID
 
 # Majburiy obuna linklari
@@ -39,6 +39,11 @@ LEAVE_TEAM_API_URL = "http://46.101.107.199/api/leave-team/"
 # ===== GLOBAL VARIABLES =====
 pending_referral_codes = {}  # user_id -> referral_code
 
+# ===== Admin tekshirish =====
+def is_admin(user_id: int) -> bool:
+    """Foydalanuvchi admin ekanligini tekshirish"""
+    return user_id == ADMIN_ID
+
 # ===== STATES =====
 class RegistrationForm(StatesGroup):
     # Asosiy ma'lumotlar
@@ -52,6 +57,10 @@ class TeamManagementForm(StatesGroup):
     # Jamoa boshqaruvi
     remove_member = State()
     team_settings = State()
+
+class AdminForm(StatesGroup):
+    # Admin funksiyalari
+    broadcast_message = State()
 
 # ===== Asosiy menyu klaviaturasi =====
 def main_menu():
@@ -197,6 +206,18 @@ async def leave_team(user_id):
         print(f"Jamoadan chiqishda xato: {e}")
         return False, {'error': str(e)}
 
+async def get_all_users():
+    """Barcha foydalanuvchilarni olish"""
+    try:
+        response = requests.get(f"{DJANGO_API_URL}all-users/", timeout=10)
+        if response.status_code == 200:
+            return response.json().get('users', [])
+        else:
+            return []
+    except Exception as e:
+        print(f"Foydalanuvchilarni olishda xato: {e}")
+        return []
+
 async def check_user_exists(user_id):
     """Foydalanuvchi mavjudligini tekshirish"""
     try:
@@ -316,6 +337,20 @@ async def contact_info(message: Message):
 
 # ===== Ro'yxatdan o'tish boshlanishi =====
 async def registration_start(message: Message, state: FSMContext):
+    # Username tekshirish
+    if not message.from_user.username:
+        await message.answer(
+            "❌ <b>Ro'yxatdan o'tish uchun username kerak!</b>\n\n"
+            "Iltimos, Telegram sozlamalarida username o'rnating va qaytadan urinib ko'ring.\n\n"
+            "Username qanday o'rnatish:\n"
+            "1. Telegram sozlamalari → Profil → Username\n"
+            "2. Username yarating (masalan: @sizning_username)\n"
+            "3. Saqlang va qaytadan /start buyrug'ini yuboring",
+            reply_markup=main_menu(),
+            parse_mode="HTML"
+        )
+        return
+    
     # Foydalanuvchi allaqachon ro'yxatdan o'tganligini tekshirish
     if await check_user_registered(message.from_user.id):
         await message.answer(
@@ -338,6 +373,16 @@ async def registration_start(message: Message, state: FSMContext):
 
 # ===== Jamoa yaratish boshlanishi =====
 async def create_team_start(message: Message, state: FSMContext):
+    # Username tekshirish
+    if not message.from_user.username:
+        await message.answer(
+            "❌ <b>Jamoa yaratish uchun username kerak!</b>\n\n"
+            "Iltimos, Telegram sozlamalarida username o'rnating va qaytadan urinib ko'ring.",
+            reply_markup=main_menu(),
+            parse_mode="HTML"
+        )
+        return
+    
     # Foydalanuvchi ro'yxatdan o'tganligini tekshirish
     success, result = await check_user_exists(message.from_user.id)
     if not success or not result.get('exists', False):
@@ -438,7 +483,8 @@ async def process_freefire_id(message: Message, state: FSMContext):
     directions = [
         "Andijon", "Farg'ona", "Namangan", "Toshkent",
         "Sirdaryo", "Jizzax", "Samarqand", "Qashqadaryo",
-        "Surxondaryo", "Navoiy", "Buxoro", "Xorazm"
+        "Surxondaryo", "Navoiy", "Buxoro", "Xorazm",
+        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston"
     ]
 
     row_width = 2
@@ -457,6 +503,19 @@ async def process_direction(message: Message, state: FSMContext):
         await state.clear()
         await message.answer("Asosiy menyu:", reply_markup=main_menu())
         return
+    
+    # Faqat ruxsat etilgan viloyatlarni qabul qilish
+    allowed_directions = [
+        "Andijon", "Farg'ona", "Namangan", "Toshkent",
+        "Sirdaryo", "Jizzax", "Samarqand", "Qashqadaryo",
+        "Surxondaryo", "Navoiy", "Buxoro", "Xorazm",
+        "Qoraqalpog'iston", "Qirg'iziston", "Qozog'iston"
+    ]
+    
+    if message.text not in allowed_directions:
+        await message.answer("❌ Iltimos, quyidagi tugmalardan birini tanlang:")
+        return
+    
     await state.update_data(direction=message.text)
     
     kb = ReplyKeyboardMarkup(
@@ -644,6 +703,74 @@ async def show_my_team(message: Message):
     else:
         error_msg = result.get('error', 'Noma\'lum xato')
         await message.answer(f"❌ Siz hali hech qanday jamoaga qo'shilmagansiz.\n\nSabab: {error_msg}")
+
+# ===== Admin Broadcast =====
+async def cmd_broadcast(message: Message, state: FSMContext):
+    """Admin uchun broadcast command"""
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ Siz admin emassiz!")
+        return
+    
+    await message.answer(
+        "📢 <b>Broadcast xabar yuborish</b>\n\n"
+        "Barcha foydalanuvchilarga yubormoqchi bo'lgan xabaringizni yuboring:",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="❌ Bekor qilish")]],
+            resize_keyboard=True
+        ),
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminForm.broadcast_message)
+
+async def process_broadcast(message: Message, state: FSMContext, bot: Bot):
+    """Broadcast xabarni qayta ishlash"""
+    if message.text == "❌ Bekor qilish":
+        await state.clear()
+        await message.answer("Broadcast bekor qilindi.", reply_markup=main_menu())
+        return
+    
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ Siz admin emassiz!")
+        await state.clear()
+        return
+    
+    # Barcha foydalanuvchilarni olish
+    users = await get_all_users()
+    
+    if not users:
+        await message.answer("❌ Foydalanuvchilar topilmadi!")
+        await state.clear()
+        return
+    
+    # Xabarni yuborish
+    sent_count = 0
+    failed_count = 0
+    
+    await message.answer(f"📤 {len(users)} ta foydalanuvchiga xabar yuborilmoqda...")
+    
+    for user in users:
+        try:
+            user_id = user.get('user_id')
+            if user_id:
+                await bot.send_message(
+                    chat_id=user_id,
+                    text=f"📢 <b>Admin xabari:</b>\n\n{message.text}",
+                    parse_mode="HTML"
+                )
+                sent_count += 1
+        except Exception as e:
+            print(f"Xabar yuborishda xato (user_id: {user.get('user_id')}): {e}")
+            failed_count += 1
+    
+    await message.answer(
+        f"✅ <b>Broadcast yakunlandi!</b>\n\n"
+        f"📤 Yuborildi: {sent_count}\n"
+        f"❌ Xato: {failed_count}\n"
+        f"📊 Jami: {len(users)}",
+        reply_markup=main_menu(),
+        parse_mode="HTML"
+    )
+    await state.clear()
 
 # ===== Callback query handler =====
 async def handle_callback(callback: CallbackQuery, bot: Bot):
@@ -867,6 +994,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.message.register(cmd_start, Command("start"))
+    dp.message.register(cmd_broadcast, Command("broadcast"))
     dp.message.register(about_university, F.text == "ℹ️ Ma'lumot")
     dp.message.register(contact_info, F.text == "📞 Aloqa uchun")
     dp.message.register(registration_start, F.text == "🏆 Ro'yxatdan o'tish")
@@ -884,6 +1012,9 @@ async def main():
     
     # Team management handlers
     dp.message.register(process_team_name, TeamManagementForm.team_settings)
+    
+    # Admin handlers
+    dp.message.register(process_broadcast, AdminForm.broadcast_message)
     
     dp.callback_query.register(handle_callback)
 
