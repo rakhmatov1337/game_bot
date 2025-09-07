@@ -635,12 +635,24 @@ async def show_teams_list(message: Message, page: int = 0):
     text += f"📄 Sahifa {page + 1}/{total_pages}\n\n"
     
     for team in current_teams:
-        team_name = team.get('name', 'Noma\'lum')
-        captain_name = team.get('captain_name', 'Noma\'lum')
+        # Xavfsiz matn qaytarish funksiyasi
+        def safe_text(text):
+            if not text:
+                return "Noma'lum"
+            # Maxsus belgilarni tozalash
+            text = str(text).replace('\\', '').replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]')
+            text = text.replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`')
+            text = text.replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-')
+            text = text.replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}')
+            text = text.replace('.', '\\.').replace('!', '\\!')
+            return text[:50]  # Uzunlikni cheklash
+        
+        team_name = safe_text(team.get('name', 'Noma\'lum'))
+        captain_name = safe_text(team.get('captain_name', 'Noma\'lum'))
         current_members = team.get('current_members', 0)
         max_members = team.get('max_members', 4)
-        direction = team.get('direction', 'Noma\'lum')
-        captain_username = team.get('captain_username', 'username yo\'q')
+        direction = safe_text(team.get('direction', 'Noma\'lum'))
+        captain_username = safe_text(team.get('captain_username', 'username yo\'q'))
         
         # To'liq bo'lgan jamoalarni ajratib ko'rsatish
         is_full = current_members >= max_members
@@ -694,11 +706,23 @@ async def show_solo_players(message: Message, page: int = 0):
     text += f"📄 Sahifa {page + 1}/{total_pages}\n\n"
     
     for player in current_players:
-        fullname = player.get('fullname', 'Noma\'lum')
-        freefire_id = player.get('freefire_id', 'Noma\'lum')
-        direction = player.get('direction', 'Noma\'lum')
-        username = player.get('username', 'username yo\'q')
-        status = player.get('status', 'Noma\'lum')
+        # Xavfsiz matn qaytarish funksiyasi
+        def safe_text(text):
+            if not text:
+                return "Noma'lum"
+            # Maxsus belgilarni tozalash
+            text = str(text).replace('\\', '').replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]')
+            text = text.replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`')
+            text = text.replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-')
+            text = text.replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}')
+            text = text.replace('.', '\\.').replace('!', '\\!')
+            return text[:50]  # Uzunlikni cheklash
+        
+        fullname = safe_text(player.get('fullname', 'Noma\'lum'))
+        freefire_id = safe_text(player.get('freefire_id', 'Noma\'lum'))
+        direction = safe_text(player.get('direction', 'Noma\'lum'))
+        username = safe_text(player.get('username', 'username yo\'q'))
+        status = safe_text(player.get('status', 'Noma\'lum'))
         
         text += (
             f"👤 <b>{fullname}</b>\n"
